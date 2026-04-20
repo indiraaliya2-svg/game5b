@@ -3,29 +3,30 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Petualangan Angka SD</title>
-    <!-- Menggunakan CDN luar yang stabil -->
+    <title>Petualangan Angka Bersuara</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
     <style>
-        body { font-family: 'Fredoka', sans-serif; background: linear-gradient(180deg, #38bdf8, #4ade80); min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; overflow-x: hidden; }
-        .game-card { background: white; border-radius: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 500px; padding: 2rem; text-align: center; }
+        body { font-family: 'Fredoka', sans-serif; background: linear-gradient(180deg, #38bdf8, #4ade80); min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; }
+        .game-card { background: white; border-radius: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 500px; padding: 2rem; text-align: center; position: relative; }
         .btn-main { background: linear-gradient(to right, #facc15, #f97316); color: white; font-weight: bold; padding: 1rem 2rem; border-radius: 1rem; transition: transform 0.2s; cursor: pointer; border: none; font-size: 1.25rem; }
         .btn-main:hover { transform: scale(1.05); }
-        .btn-option { width: 100%; text-align: left; padding: 1rem; margin-bottom: 0.5rem; border: 2px solid #e5e7eb; border-radius: 1rem; background: #f9fafb; cursor: pointer; transition: 0.2s; }
-        .btn-option:hover { background: #eff6ff; border-color: #3b82f6; }
+        .btn-option { width: 100%; text-align: left; padding: 1rem; margin-bottom: 0.5rem; border: 2px solid #e5e7eb; border-radius: 1rem; background: #f9fafb; cursor: pointer; }
         .correct { background: #dcfce7 !important; border-color: #22c55e !important; }
         .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; }
+        #sound-status { position: absolute; top: 10px; right: 20px; font-size: 0.8rem; color: #666; }
     </style>
 </head>
 <body>
 
     <div id="game-container" class="game-card">
+        <div id="sound-status">🔊 Suara Aktif</div>
+
         <!-- TAMPILAN AWAL -->
         <div id="screen-start">
             <h1 class="text-4xl font-bold text-blue-600 mb-2">Petualangan Angka 🌟</h1>
-            <p class="text-gray-600 mb-8">Ayo belajar menulis angka dan nilai uang bersama!</p>
-            <button onclick="mulaiGame()" class="btn-main">🚀 Mulai Petualangan!</button>
+            <p class="text-gray-600 mb-8">Dengarkan musiknya dan ayo bermain!</p>
+            <button onclick="mulaiGame()" class="btn-main">🚀 Mulai & Aktifkan Suara</button>
         </div>
 
         <!-- TAMPILAN PERMAINAN -->
@@ -42,17 +43,67 @@
 
         <!-- TAMPILAN SELESAI -->
         <div id="screen-end" style="display: none;">
-            <h2 class="text-3xl font-bold text-green-600 mb-2">Luar Biasa! 🏆</h2>
-            <p class="text-xl mb-4">Permainan Selesai</p>
+            <h2 class="text-3xl font-bold text-green-600 mb-2">Hebat! 🏆</h2>
             <div class="bg-gray-100 p-6 rounded-2xl mb-6">
-                <p class="text-gray-500">Skor Akhir Kamu:</p>
                 <p id="final-score" class="text-5xl font-bold text-purple-600">0</p>
+                <p class="text-gray-500">Skor Akhir</p>
             </div>
             <button onclick="location.reload()" class="btn-main">🔄 Main Lagi</button>
         </div>
     </div>
 
     <script>
+        // SISTEM SUARA (WEB AUDIO API)
+        let audioCtx;
+        function initAudio() {
+            if (!audioCtx) audioCtx = new (window.AudioContext || window.webkitAudioContext)();
+        }
+
+        function playSound(type) {
+            initAudio();
+            const osc = audioCtx.createOscillator();
+            const gain = audioCtx.createGain();
+            osc.connect(gain);
+            gain.connect(audioCtx.destination);
+
+            if (type === 'correct') {
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(880, audioCtx.currentTime); 
+                osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.1);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.3);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.3);
+            } else if (type === 'wrong') {
+                osc.type = 'sawtooth';
+                osc.frequency.setValueAtTime(200, audioCtx.currentTime);
+                gain.gain.setValueAtTime(0.1, audioCtx.currentTime);
+                gain.gain.linearRampToValueAtTime(0, audioCtx.currentTime + 0.4);
+                osc.start();
+                osc.stop(audioCtx.currentTime + 0.4);
+            } else if (type === 'bg') {
+                // Musik latar sederhana (looping melody)
+                const notes = [261.63, 329.63, 392.00, 523.25]; // C, E, G, C tinggi
+                let now = audioCtx.currentTime;
+                notes.forEach((f, i) => {
+                    const o = audioCtx.createOscillator();
+                    const g = audioCtx.createGain();
+                    o.type = 'triangle';
+                    o.frequency.value = f;
+                    o.connect(g);
+                    g.connect(audioCtx.destination);
+                    g.gain.setValueAtTime(0.03, now + (i * 0.5));
+                    g.gain.exponentialRampToValueAtTime(0.001, now + (i * 0.5) + 0.4);
+                    o.start(now + (i * 0.5));
+                    o.stop(now + (i * 0.5) + 0.5);
+                });
+            }
+        }
+
+        // Jalankan musik latar setiap 2 detik
+        let bgInterval;
+
+        // DATA GAME
         const soal = [
             { q: "Penulisan uang lima belas ribu rupiah yang benar adalah...", opts: ["Rp15.000,00", "15.000 Rupiah"], correct: 0 },
             { q: "Berat semangka itu delapan kilogram. Penulisan yang benar...", opts: ["8 kilogram", "delapan kilogram"], correct: 0 },
@@ -65,6 +116,10 @@
         let skor = 0;
 
         function mulaiGame() {
+            initAudio();
+            playSound('bg');
+            bgInterval = setInterval(() => playSound('bg'), 2500); // Mulai musik latar
+
             document.getElementById('screen-start').style.display = 'none';
             document.getElementById('screen-game').style.display = 'block';
             tampilkanSoal();
@@ -97,10 +152,12 @@
                 elemen.classList.add('correct');
                 skor += 20;
                 document.getElementById('score-display').innerText = `Skor: ${skor}`;
+                playSound('correct'); // SUARA BENAR
                 showFeedback("Benar! Hebat! 🎉", "text-green-600");
             } else {
                 elemen.classList.add('wrong');
                 semuaTombol[benar].classList.add('correct');
+                playSound('wrong'); // SUARA SALAH
                 showFeedback("Oops! Kurang tepat. 😅", "text-red-600");
             }
             document.getElementById('btn-next').classList.remove('hidden');
@@ -118,6 +175,7 @@
             if (indexSoal < soal.length) {
                 tampilkanSoal();
             } else {
+                clearInterval(bgInterval); // Berhenti musik latar saat selesai
                 tampilkanSelesai();
             }
         }
