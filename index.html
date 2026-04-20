@@ -1,0 +1,132 @@
+<!doctype html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Petualangan Angka SD</title>
+    <!-- Menggunakan CDN luar yang stabil -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Fredoka:wght@400;600&display=swap" rel="stylesheet">
+    <style>
+        body { font-family: 'Fredoka', sans-serif; background: linear-gradient(180deg, #38bdf8, #4ade80); min-height: 100vh; margin: 0; display: flex; align-items: center; justify-content: center; overflow-x: hidden; }
+        .game-card { background: white; border-radius: 2rem; box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 90%; max-width: 500px; padding: 2rem; text-align: center; }
+        .btn-main { background: linear-gradient(to right, #facc15, #f97316); color: white; font-weight: bold; padding: 1rem 2rem; border-radius: 1rem; transition: transform 0.2s; cursor: pointer; border: none; font-size: 1.25rem; }
+        .btn-main:hover { transform: scale(1.05); }
+        .btn-option { width: 100%; text-align: left; padding: 1rem; margin-bottom: 0.5rem; border: 2px solid #e5e7eb; border-radius: 1rem; background: #f9fafb; cursor: pointer; transition: 0.2s; }
+        .btn-option:hover { background: #eff6ff; border-color: #3b82f6; }
+        .correct { background: #dcfce7 !important; border-color: #22c55e !important; }
+        .wrong { background: #fee2e2 !important; border-color: #ef4444 !important; }
+    </style>
+</head>
+<body>
+
+    <div id="game-container" class="game-card">
+        <!-- TAMPILAN AWAL -->
+        <div id="screen-start">
+            <h1 class="text-4xl font-bold text-blue-600 mb-2">Petualangan Angka 🌟</h1>
+            <p class="text-gray-600 mb-8">Ayo belajar menulis angka dan nilai uang bersama!</p>
+            <button onclick="mulaiGame()" class="btn-main">🚀 Mulai Petualangan!</button>
+        </div>
+
+        <!-- TAMPILAN PERMAINAN -->
+        <div id="screen-game" style="display: none;">
+            <div class="flex justify-between mb-4 font-bold text-purple-600">
+                <span id="q-number">Soal 1/5</span>
+                <span id="score-display">Skor: 0</span>
+            </div>
+            <p id="q-text" class="text-xl font-semibold text-gray-800 mb-6"></p>
+            <div id="options-area"></div>
+            <div id="feedback" class="mt-4 font-bold text-lg hidden"></div>
+            <button id="btn-next" onclick="nextSoal()" class="btn-main mt-6 hidden">Lanjut ➡️</button>
+        </div>
+
+        <!-- TAMPILAN SELESAI -->
+        <div id="screen-end" style="display: none;">
+            <h2 class="text-3xl font-bold text-green-600 mb-2">Luar Biasa! 🏆</h2>
+            <p class="text-xl mb-4">Permainan Selesai</p>
+            <div class="bg-gray-100 p-6 rounded-2xl mb-6">
+                <p class="text-gray-500">Skor Akhir Kamu:</p>
+                <p id="final-score" class="text-5xl font-bold text-purple-600">0</p>
+            </div>
+            <button onclick="location.reload()" class="btn-main">🔄 Main Lagi</button>
+        </div>
+    </div>
+
+    <script>
+        const soal = [
+            { q: "Penulisan uang lima belas ribu rupiah yang benar adalah...", opts: ["Rp15.000,00", "15.000 Rupiah"], correct: 0 },
+            { q: "Berat semangka itu delapan kilogram. Penulisan yang benar...", opts: ["8 kilogram", "delapan kilogram"], correct: 0 },
+            { q: "Alamat rumah Siti berada di...", opts: ["Jalan Mawar No. 9", "Jalan mawar nomor 9"], correct: 0 },
+            { q: "Penulisan angka 'dua meter' yang benar dalam kalimat...", opts: ["2 meter", "dua meter"], correct: 0 },
+            { q: "Dana pembangunan taman sebesar tiga ratus juta rupiah...", opts: ["300 juta rupiah", "300.000.000 rupiah"], correct: 0 }
+        ];
+
+        let indexSoal = 0;
+        let skor = 0;
+
+        function mulaiGame() {
+            document.getElementById('screen-start').style.display = 'none';
+            document.getElementById('screen-game').style.display = 'block';
+            tampilkanSoal();
+        }
+
+        function tampilkanSoal() {
+            const s = soal[indexSoal];
+            document.getElementById('q-number').innerText = `Soal ${indexSoal + 1}/${soal.length}`;
+            document.getElementById('q-text').innerText = s.q;
+            document.getElementById('btn-next').classList.add('hidden');
+            document.getElementById('feedback').classList.add('hidden');
+            
+            const area = document.getElementById('options-area');
+            area.innerHTML = "";
+            
+            s.opts.forEach((opt, i) => {
+                const btn = document.createElement('button');
+                btn.className = 'btn-option';
+                btn.innerText = opt;
+                btn.onclick = () => cekJawaban(i, s.correct, btn);
+                area.appendChild(btn);
+            });
+        }
+
+        function cekJawaban(dipilih, benar, elemen) {
+            const semuaTombol = document.querySelectorAll('.btn-option');
+            semuaTombol.forEach(b => b.disabled = true);
+
+            if (dipilih === benar) {
+                elemen.classList.add('correct');
+                skor += 20;
+                document.getElementById('score-display').innerText = `Skor: ${skor}`;
+                showFeedback("Benar! Hebat! 🎉", "text-green-600");
+            } else {
+                elemen.classList.add('wrong');
+                semuaTombol[benar].classList.add('correct');
+                showFeedback("Oops! Kurang tepat. 😅", "text-red-600");
+            }
+            document.getElementById('btn-next').classList.remove('hidden');
+        }
+
+        function showFeedback(msg, warna) {
+            const fb = document.getElementById('feedback');
+            fb.innerText = msg;
+            fb.className = `mt-4 font-bold text-lg ${warna}`;
+            fb.classList.remove('hidden');
+        }
+
+        function nextSoal() {
+            indexSoal++;
+            if (indexSoal < soal.length) {
+                tampilkanSoal();
+            } else {
+                tampilkanSelesai();
+            }
+        }
+
+        function tampilkanSelesai() {
+            document.getElementById('screen-game').style.display = 'none';
+            document.getElementById('screen-end').style.display = 'block';
+            document.getElementById('final-score').innerText = skor;
+        }
+    </script>
+</body>
+</html>
